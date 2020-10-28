@@ -12,7 +12,7 @@ def epi_test():
 	print(backoff.transliterate('Werkt'))
 
 def main():
-	file1 = open('handgeschreven.txt', 'r')
+	file1 = open('datasets/sample_sentences.txt', 'r')
 	lines = file1.readlines()
 
 	# phonemes = ""
