@@ -5,7 +5,6 @@ from collections import defaultdict
 
 def get_corpus(path, epi):
 	corpus_sentences = []
-	corpus_words = []
 
 	with open(path, 'r') as text:
 		lines = text.readlines()
@@ -19,13 +18,10 @@ def get_corpus(path, epi):
 			line = line.replace("\n", "")
 			# transliterate g2p
 			line_phonetic = epi.transliterate(line)
-
-			# add sentences and words to corpus
+			# add sentence to corpus
 			corpus_sentences.append(line_phonetic)
-			for word in line_phonetic.split():
-				corpus_words.append(word)
 
-	return corpus_sentences, set(corpus_words)
+	return corpus_sentences
 
 def rm_lines_with_rare_words(lines, min_count=1):
 	# get word count in corpus
@@ -33,7 +29,7 @@ def rm_lines_with_rare_words(lines, min_count=1):
 	for line in lines:
 		for word in line.split():
 			count[word] += 1
-	# prune lines with rare words
+	# store lines that do not contain rare words
 	sentences = []
 	for line in lines:
 		add = True
@@ -43,37 +39,52 @@ def rm_lines_with_rare_words(lines, min_count=1):
 				break
 		if (add):
 			sentences.append(line)
-	# build new word corpus
-	words = []
-	for line in sentences:
-		for word in line.split():
-			words.append(word)
-	return (sentences, set(words))
+	return (sentences)
+
+def rm_short_lines(lines, min_length=1):
+	sentences = []
+	for line in lines:
+		if (len(line.split()) >= min_length):
+			sentences.append(line)
+	return (sentences)
 
 def main():
 	# parsing of input flags
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2, 3, 4],
 					help="output additional information")
-	parser.add_argument("-p", "--prune", type=int,
+	parser.add_argument("-c", "--count", type=int,
 					help="Prune sentences with words that occur less than n times in corpus.")
+	parser.add_argument("-l", "--length", type=int,
+					help="Prune sentences with less than n words.")
 	parser.add_argument("file", type=str,
                     help="input file used as training data")
 	args = parser.parse_args()
-	min_count = args.prune if args.prune else 1
 
-	# preparing the corpus
+	# Transliterating the corpus
 	epi = Epitran("nld-Latn")
-	sentences, words = get_corpus(args.file, epi)
+	sentences = get_corpus(args.file, epi)
 
 	# Output corpus info if verbose
 	if (args.verbosity >= 2):
+		words = set()
+		for line in sentences:
+			words.update(line.split())
 		print("\nBefore pruning:")
 		print("Sentences: {}\nUnique words: {}" \
 								.format(len(set(sentences)), len(words)))
 
 	# Prune sentences
-	sentences, words = rm_lines_with_rare_words(sentences, min_count)
+	if (args.count):
+		sentences = rm_lines_with_rare_words(sentences, args.count)
+	if (args.length):
+		sentences = rm_short_lines(sentences, args.length)
+
+	if (args.count or args.length):
+		# build new word corpus
+		words = set()
+		for line in sentences:
+			words.update(line.split())
 
 	# Output corpus info if verbose
 	if (args.verbosity >= 2):
