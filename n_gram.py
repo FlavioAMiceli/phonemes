@@ -1,25 +1,38 @@
+import json
 import argparse
 import string
 from epitran import Epitran
 from collections import defaultdict
 
-def get_corpus(path, epi):
+def get_corpus(path, epi, use_dict=True):
 	corpus_sentences = []
 
-	with open(path, 'r') as text:
+	with open(path, 'r') as text, \
+		open('g2p_dictionary/dutch_dic_to_phonetic.1.json', 'r') as g2p_file:
 		lines = text.readlines()
+		g2p_dict = json.load(g2p_file)
+		g2p_dict = {k.lower():v for k,v in g2p_dict.items()}
 
 		for line in lines:
 			# remove digits
 			line = line.translate(str.maketrans('', '', string.digits))
 			# remove punctuation
 			line = line.translate(str.maketrans('', '', string.punctuation))
+			# to lower case
+			line = line.lower()
 			# remove nl character
 			line = line.replace("\n", "")
-			# transliterate g2p
-			line_phonetic = epi.transliterate(line)
-			# add sentence to corpus
-			corpus_sentences.append(line_phonetic)
+			# transliterate g2p using dict with epitran as fallback
+			if (use_dict):
+				line_phonetic = []
+				for word in line.split():
+					word_phonetic = g2p_dict.get(word, epi.transliterate(word))
+					line_phonetic.append(word_phonetic)
+				corpus_sentences.append(" ".join(line_phonetic))
+			# transliterate using epitran
+			else:
+				line_phonetic = epi.transliterate(line)
+				corpus_sentences.append(line_phonetic)
 
 	return corpus_sentences
 
@@ -51,7 +64,7 @@ def rm_short_lines(lines, min_length=1):
 def main():
 	# parsing of input flags
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2, 3, 4],
+	parser.add_argument("-v", "--verbosity", nargs='?', const=2, type=int, choices=[0, 1, 2, 3, 4],
 					help="output additional information")
 	parser.add_argument("-c", "--count", type=int,
 					help="Prune sentences with words that occur less than n times in corpus.")
@@ -66,7 +79,7 @@ def main():
 	sentences = get_corpus(args.file, epi)
 
 	# Output corpus info if verbose
-	if (args.verbosity >= 2):
+	if (args.verbosity and args.verbosity >= 2):
 		words = set()
 		for line in sentences:
 			words.update(line.split())
@@ -87,15 +100,15 @@ def main():
 			words.update(line.split())
 
 	# Output corpus info if verbose
-	if (args.verbosity >= 2):
+	if (args.verbosity and args.verbosity >= 2):
 		print("\nAfter pruning:")
-	if (args.verbosity >= 1):
+	if (args.verbosity and args.verbosity >= 1):
 		print("Sentences: {}\nUnique words: {}" \
 								.format(len(set(sentences)), len(words)))
-	if (args.verbosity == 4):
+	if (args.verbosity and args.verbosity == 4):
 		for line in sentences:
 			print(line)
-	if (args.verbosity >= 3):
+	if (args.verbosity and args.verbosity >= 3):
 		print(sorted(words))
 
 if __name__ == "__main__":
