@@ -1,23 +1,21 @@
-import json
-import argparse
-import string
-from epitran import Epitran
 from collections import defaultdict
 
 class NGLM:
 
-	def __init__(self, path, epi, order=3):
-		self._order = order
+	def __init__(self, path, epi):
 		self._count_table = defaultdict(int)
-		self._prob_table = defaultdict(float)
 		self._corpus = list()
 		self._vocab = set()
 
 		self.set_corpus(path, epi)
 		self.update_count_table()
 
-	def set_corpus(self, path, epi, use_dict=True):
+
+	# TODO: use a generator to yield lines
+	def set_corpus(self, path, epi_code, use_dict=True):
 		def clean_line(line):
+			import string
+
 			# remove digits
 			line = line.translate(str.maketrans('', '', string.digits))
 			# remove punctuation
@@ -28,11 +26,15 @@ class NGLM:
 			line = line.replace("\n", "")
 			return line
 
+		import json
+		from epitran import Epitran
+
 		with open(path, 'r') as text, \
 			open('g2p_dictionary/dutch_dic_to_phonetic.1.json', 'r') as g2p_file:
 			lines = text.readlines()
 			g2p_dict = json.load(g2p_file)
 			g2p_dict = {k.lower():v for k,v in g2p_dict.items()}
+			epi = Epitran(epi_code)
 
 			for line in lines:
 				line = clean_line(line)
@@ -60,37 +62,23 @@ class NGLM:
 		# Update vocab
 		self._vocab.update(self._count_table.keys())
 
+	# TODO: make more efficient by removing from original list
 	def rm_lines_with_rare_words(self, min_count=1):
 
 		# store lines that do not contain rare words
-		sentences = []
-		for line in self._corpus:
-			add = True
-			for word in line.split():
-				if self._count_table[word] < min_count:
-					add = False
-					break
-			if (add):
-				sentences.append(line)
-
-		# Update class attributes
-		self._corpus = sentences
+		self._corpus = [line for line in self._corpus if
+						all([self._count_table[word] >= min_count for word in line.split()])]
 		self.update_count_table()
 
 	def rm_short_lines(self, min_length=1):
-
-		# store lines that are at least min_length words long
-		sentences = []
-		for line in self._corpus:
-			if (len(line.split()) >= min_length):
-				sentences.append(line)
-
-		# Update class attributes
-		self._corpus = sentences
+		self._corpus = \
+			[line for line in self._corpus if len(line.split()) >= min_length]
 		self.update_count_table()
 
 def main():
 	# parsing of input flags
+	import argparse
+
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-v", "--verbose", nargs='?', const=1, type=int,
 					help="output additional information")
@@ -103,8 +91,7 @@ def main():
 	args = parser.parse_args()
 
 	# Init language model
-	epi = Epitran("nld-Latn")
-	n_gram_lm = NGLM(args.file, epi)
+	n_gram_lm = NGLM(args.file, "nld-Latn")
 
 	# Output corpus info if verbose
 	if (args.verbose):
