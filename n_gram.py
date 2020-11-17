@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-class NGLM:
+class CORPUS:
 
 	def __init__(self, path, epi):
 		self._count_table = defaultdict(int)
@@ -51,23 +51,20 @@ class NGLM:
 					self._corpus.append(line_phonetic)
 
 	def update_count_table(self):
-		self._count_table = defaultdict(int)
-		self._vocab = set()
-
 		# Update count table
+		self._count_table = defaultdict(int)
 		for line in self._corpus:
 			for word in line.split():
 				self._count_table[word] += 1
 
 		# Update vocab
-		self._vocab.update(self._count_table.keys())
+		self._vocab = set(self._count_table.keys())
 
-	# TODO: make more efficient by removing from original list
 	def rm_lines_with_rare_words(self, min_count=1):
 
 		# store lines that do not contain rare words
-		self._corpus = [line for line in self._corpus if
-						all([self._count_table[word] >= min_count for word in line.split()])]
+		self._corpus = [line for line in self._corpus if \
+			all([self._count_table[word] >= min_count for word in line.split()])]
 		self.update_count_table()
 
 	def rm_short_lines(self, min_length=1):
@@ -75,10 +72,16 @@ class NGLM:
 			[line for line in self._corpus if len(line.split()) >= min_length]
 		self.update_count_table()
 
+	def print_corpus(self):
+		for line in self._corpus:
+			print (line)
+
+	def print_vocab(self):
+		print(self._vocab)
+
 def main():
 	# parsing of input flags
 	import argparse
-
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-v", "--verbose", nargs='?', const=1, type=int,
 					help="output additional information")
@@ -91,25 +94,28 @@ def main():
 	args = parser.parse_args()
 
 	# Init language model
-	n_gram_lm = NGLM(args.file, "nld-Latn")
+	corp = CORPUS(args.file, "nld-Latn")
 
 	# Output corpus info if verbose
 	if (args.verbose):
 		print("\nBefore pruning:")
 		print("Sentences: {}\nUnique words: {}" \
-								.format(len(n_gram_lm._corpus), len(n_gram_lm._vocab)))
+				.format(len(corp._corpus), len(corp._vocab)))
 
 	# Prune sentences
 	if (args.count):
-		n_gram_lm.rm_lines_with_rare_words(args.count)
+		corp.rm_lines_with_rare_words(args.count)
 	if (args.length):
-		n_gram_lm.rm_short_lines(args.length)
+		corp.rm_short_lines(args.length)
 
 	# Output corpus info if verbose
 	if (args.verbose):
 		print("\nAfter pruning:")
 		print("Sentences: {}\nUnique words: {}" \
-								.format(len(n_gram_lm._corpus), len(n_gram_lm._vocab)))
+				.format(len(corp._corpus), len(corp._vocab)))
+
+	# corp.print_corpus()
+	# corp.print_vocab()
 
 if __name__ == "__main__":
 	main()
