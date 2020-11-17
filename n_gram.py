@@ -8,13 +8,13 @@ class NGLM:
 
 	def __init__(self, path, epi, order=3):
 		self._order = order
-		self._count_table = dict()
-		self._prob_table = dict()
+		self._count_table = defaultdict(int)
+		self._prob_table = defaultdict(float)
 		self._corpus = list()
 		self._vocab = set()
 
 		self.set_corpus(path, epi)
-		self.set_vocab()
+		self.update_count_table()
 
 	def set_corpus(self, path, epi, use_dict=True):
 		def clean_line(line):
@@ -26,10 +26,8 @@ class NGLM:
 			line = line.lower()
 			# remove nl character
 			line = line.replace("\n", "")
-
 			return line
 
-		corpus_sentences = []
 		with open(path, 'r') as text, \
 			open('g2p_dictionary/dutch_dic_to_phonetic.1.json', 'r') as g2p_file:
 			lines = text.readlines()
@@ -44,51 +42,52 @@ class NGLM:
 					for word in line.split():
 						word_phonetic = g2p_dict.get(word, epi.transliterate(word))
 						line_phonetic.append(word_phonetic)
-					corpus_sentences.append(" ".join(line_phonetic))
+					self._corpus.append(" ".join(line_phonetic))
 				# transliterate using epitran
 				else:
 					line_phonetic = epi.transliterate(line)
-					corpus_sentences.append(line_phonetic)
+					self._corpus.append(line_phonetic)
 
-		self._corpus = corpus_sentences
-
-	def set_vocab(self):
+	def update_count_table(self):
+		self._count_table = defaultdict(int)
 		self._vocab = set()
 
-		for line in self._corpus:
-			self._vocab.update(line.split())
-
-
-	def rm_lines_with_rare_words(self, min_count=1):
-
-		# get word count in corpus
-		count = defaultdict(int)
+		# Update count table
 		for line in self._corpus:
 			for word in line.split():
-				count[word] += 1
+				self._count_table[word] += 1
+
+		# Update vocab
+		self._vocab.update(self._count_table.keys())
+
+	def rm_lines_with_rare_words(self, min_count=1):
 
 		# store lines that do not contain rare words
 		sentences = []
 		for line in self._corpus:
 			add = True
 			for word in line.split():
-				if count[word] < min_count:
+				if self._count_table[word] < min_count:
 					add = False
 					break
 			if (add):
 				sentences.append(line)
 
+		# Update class attributes
 		self._corpus = sentences
-		self.set_vocab()
+		self.update_count_table()
 
 	def rm_short_lines(self, min_length=1):
+
+		# store lines that are at least min_length words long
 		sentences = []
 		for line in self._corpus:
 			if (len(line.split()) >= min_length):
 				sentences.append(line)
 
+		# Update class attributes
 		self._corpus = sentences
-		self.set_vocab()
+		self.update_count_table()
 
 def main():
 	# parsing of input flags
@@ -103,7 +102,7 @@ def main():
                     help="input file used as training data")
 	args = parser.parse_args()
 
-	# Transliterating the corpus
+	# Init language model
 	epi = Epitran("nld-Latn")
 	n_gram_lm = NGLM(args.file, epi)
 
