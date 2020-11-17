@@ -4,112 +4,125 @@ import string
 from epitran import Epitran
 from collections import defaultdict
 
-def get_corpus(path, epi, use_dict=True):
-	corpus_sentences = []
+class NGLM:
 
-	with open(path, 'r') as text, \
-		open('g2p_dictionary/dutch_dic_to_phonetic.1.json', 'r') as g2p_file:
-		lines = text.readlines()
-		g2p_dict = json.load(g2p_file)
-		g2p_dict = {k.lower():v for k,v in g2p_dict.items()}
+	def __init__(self, order=3):
+		self._order = order
+		self._count_table = dict()
+		self._prob_table = dict()
+		self._corpus = list()
+		self._vocab = set()
 
-		for line in lines:
-			# remove digits
-			line = line.translate(str.maketrans('', '', string.digits))
-			# remove punctuation
-			line = line.translate(str.maketrans('', '', string.punctuation))
-			# to lower case
-			line = line.lower()
-			# remove nl character
-			line = line.replace("\n", "")
-			# transliterate g2p using dict with epitran as fallback
-			if (use_dict):
-				line_phonetic = []
-				for word in line.split():
-					word_phonetic = g2p_dict.get(word, epi.transliterate(word))
-					line_phonetic.append(word_phonetic)
-				corpus_sentences.append(" ".join(line_phonetic))
-			# transliterate using epitran
-			else:
-				line_phonetic = epi.transliterate(line)
-				corpus_sentences.append(line_phonetic)
+	def set_corpus(self, path, epi, use_dict=True):
+		corpus_sentences = []
 
-	return corpus_sentences
+		with open(path, 'r') as text, \
+			open('g2p_dictionary/dutch_dic_to_phonetic.1.json', 'r') as g2p_file:
+			lines = text.readlines()
+			g2p_dict = json.load(g2p_file)
+			g2p_dict = {k.lower():v for k,v in g2p_dict.items()}
 
-def rm_lines_with_rare_words(lines, min_count=1):
-	# get word count in corpus
-	count = defaultdict(int)
-	for line in lines:
-		for word in line.split():
-			count[word] += 1
-	# store lines that do not contain rare words
-	sentences = []
-	for line in lines:
-		add = True
-		for word in line.split():
-			if count[word] < min_count:
-				add = False
-				break
-		if (add):
-			sentences.append(line)
-	return (sentences)
+			for line in lines:
+				# remove digits
+				line = line.translate(str.maketrans('', '', string.digits))
+				# remove punctuation
+				line = line.translate(str.maketrans('', '', string.punctuation))
+				# to lower case
+				line = line.lower()
+				# remove nl character
+				line = line.replace("\n", "")
+				# transliterate g2p using dict with epitran as fallback
+				if (use_dict):
+					line_phonetic = []
+					for word in line.split():
+						word_phonetic = g2p_dict.get(word, epi.transliterate(word))
+						line_phonetic.append(word_phonetic)
+					corpus_sentences.append(" ".join(line_phonetic))
+				# transliterate using epitran
+				else:
+					line_phonetic = epi.transliterate(line)
+					corpus_sentences.append(line_phonetic)
 
-def rm_short_lines(lines, min_length=1):
-	sentences = []
-	for line in lines:
-		if (len(line.split()) >= min_length):
-			sentences.append(line)
-	return (sentences)
+		self._corpus = corpus_sentences
+		return corpus_sentences
+
+	def set_vocab(self):
+		self._vocab = set()
+
+		for line in self._corpus:
+			self._vocab.update(line.split())
+
+		return self._vocab
+
+	def rm_lines_with_rare_words(self, min_count=1):
+
+		# get word count in corpus
+		count = defaultdict(int)
+		for line in self._corpus:
+			for word in line.split():
+				count[word] += 1
+
+		# store lines that do not contain rare words
+		sentences = []
+		for line in self._corpus:
+			add = True
+			for word in line.split():
+				if count[word] < min_count:
+					add = False
+					break
+			if (add):
+				sentences.append(line)
+
+		self._corpus = sentences
+		return sentences
+
+	def rm_short_lines(self, min_length=1):
+		sentences = []
+		for line in self._corpus:
+			if (len(line.split()) >= min_length):
+				sentences.append(line)
+
+		self._corpus = sentences
+		return sentences
 
 def main():
 	# parsing of input flags
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-v", "--verbosity", nargs='?', const=2, type=int, choices=[0, 1, 2, 3, 4],
+	parser.add_argument("-v", "--verbose", nargs='?', const=1, type=int,
 					help="output additional information")
 	parser.add_argument("-c", "--count", type=int,
-					help="Prune sentences with words that occur less than n times in corpus.")
+					help="Prune sentences with words that occur less than COUNT times in corpus.")
 	parser.add_argument("-l", "--length", type=int,
-					help="Prune sentences with less than n words.")
+					help="Prune sentences that have fewer than LENGTH words.")
 	parser.add_argument("file", type=str,
                     help="input file used as training data")
 	args = parser.parse_args()
 
 	# Transliterating the corpus
 	epi = Epitran("nld-Latn")
-	sentences = get_corpus(args.file, epi)
+	n_gram_lm = NGLM()
+	n_gram_lm.set_corpus(args.file, epi)
 
 	# Output corpus info if verbose
-	if (args.verbosity and args.verbosity >= 2):
-		words = set()
-		for line in sentences:
-			words.update(line.split())
+	if (args.verbose):
+		n_gram_lm.set_vocab()
 		print("\nBefore pruning:")
 		print("Sentences: {}\nUnique words: {}" \
-								.format(len(set(sentences)), len(words)))
+								.format(len(n_gram_lm._corpus), len(n_gram_lm._vocab)))
 
 	# Prune sentences
 	if (args.count):
-		sentences = rm_lines_with_rare_words(sentences, args.count)
+		n_gram_lm.rm_lines_with_rare_words(args.count)
 	if (args.length):
-		sentences = rm_short_lines(sentences, args.length)
+		n_gram_lm.rm_short_lines(args.length)
 
-	if (args.count or args.length):
-		# build new word corpus
-		words = set()
-		for line in sentences:
-			words.update(line.split())
+	n_gram_lm.set_vocab()
 
 	# Output corpus info if verbose
-	if (args.verbosity and args.verbosity >= 2):
+	if (args.verbose):
 		print("\nAfter pruning:")
-	if (args.verbosity and args.verbosity >= 1):
 		print("Sentences: {}\nUnique words: {}" \
-								.format(len(set(sentences)), len(words)))
-	if (args.verbosity and args.verbosity == 4):
-		for line in sentences:
-			print(line)
-	if (args.verbosity and args.verbosity >= 3):
-		print(sorted(words))
+								.format(len(n_gram_lm._corpus), len(n_gram_lm._vocab)))
 
 if __name__ == "__main__":
 	main()
