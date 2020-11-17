@@ -6,16 +6,30 @@ from collections import defaultdict
 
 class NGLM:
 
-	def __init__(self, order=3):
+	def __init__(self, path, epi, order=3):
 		self._order = order
 		self._count_table = dict()
 		self._prob_table = dict()
 		self._corpus = list()
 		self._vocab = set()
 
-	def set_corpus(self, path, epi, use_dict=True):
-		corpus_sentences = []
+		self.set_corpus(path, epi)
+		self.set_vocab()
 
+	def set_corpus(self, path, epi, use_dict=True):
+		def clean_line(line):
+			# remove digits
+			line = line.translate(str.maketrans('', '', string.digits))
+			# remove punctuation
+			line = line.translate(str.maketrans('', '', string.punctuation))
+			# to lower case
+			line = line.lower()
+			# remove nl character
+			line = line.replace("\n", "")
+
+			return line
+
+		corpus_sentences = []
 		with open(path, 'r') as text, \
 			open('g2p_dictionary/dutch_dic_to_phonetic.1.json', 'r') as g2p_file:
 			lines = text.readlines()
@@ -23,14 +37,7 @@ class NGLM:
 			g2p_dict = {k.lower():v for k,v in g2p_dict.items()}
 
 			for line in lines:
-				# remove digits
-				line = line.translate(str.maketrans('', '', string.digits))
-				# remove punctuation
-				line = line.translate(str.maketrans('', '', string.punctuation))
-				# to lower case
-				line = line.lower()
-				# remove nl character
-				line = line.replace("\n", "")
+				line = clean_line(line)
 				# transliterate g2p using dict with epitran as fallback
 				if (use_dict):
 					line_phonetic = []
@@ -44,7 +51,6 @@ class NGLM:
 					corpus_sentences.append(line_phonetic)
 
 		self._corpus = corpus_sentences
-		return corpus_sentences
 
 	def set_vocab(self):
 		self._vocab = set()
@@ -52,7 +58,6 @@ class NGLM:
 		for line in self._corpus:
 			self._vocab.update(line.split())
 
-		return self._vocab
 
 	def rm_lines_with_rare_words(self, min_count=1):
 
@@ -74,7 +79,7 @@ class NGLM:
 				sentences.append(line)
 
 		self._corpus = sentences
-		return sentences
+		self.set_vocab()
 
 	def rm_short_lines(self, min_length=1):
 		sentences = []
@@ -83,7 +88,7 @@ class NGLM:
 				sentences.append(line)
 
 		self._corpus = sentences
-		return sentences
+		self.set_vocab()
 
 def main():
 	# parsing of input flags
@@ -100,12 +105,10 @@ def main():
 
 	# Transliterating the corpus
 	epi = Epitran("nld-Latn")
-	n_gram_lm = NGLM()
-	n_gram_lm.set_corpus(args.file, epi)
+	n_gram_lm = NGLM(args.file, epi)
 
 	# Output corpus info if verbose
 	if (args.verbose):
-		n_gram_lm.set_vocab()
 		print("\nBefore pruning:")
 		print("Sentences: {}\nUnique words: {}" \
 								.format(len(n_gram_lm._corpus), len(n_gram_lm._vocab)))
@@ -115,8 +118,6 @@ def main():
 		n_gram_lm.rm_lines_with_rare_words(args.count)
 	if (args.length):
 		n_gram_lm.rm_short_lines(args.length)
-
-	n_gram_lm.set_vocab()
 
 	# Output corpus info if verbose
 	if (args.verbose):
