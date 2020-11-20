@@ -81,42 +81,36 @@ class Corpus:
 
 class NGram_LM:
 
-	def __init__(self, order):
+	def __init__(self, corpus, min_count=1, min_length=1, order=1):
+		self._corpus = corpus
 		self._order = order
 		self._count_table = dict()
 		self._prob_table = dict()
 
-	# def preprocess_sentence(self, text):
-	# 	for line in text:
-	# 		yield (tuple("<BoS>" * self._order) +
-	# 				tuple([c for c in line]) +
-	# 				tuple("<EoS>" * self._order))
-	#
-	# def preprocess_history(self, history):
-	# 	# Used to select the end of a longer sentence, or pad the start of a
-	# 	# sentence with <s> tokens
-	# 	if (len(history) == self._order):
-    #         return (tuple(history))
-	# 	elif (len(history) > self._order):
-    #         return (tuple(history[len(history) - self._order:length]))
-	# 	else:
-    #         missing = self._order - len(history)
-    #         return (tuple(['<BoS>'] * missing) + tuple(history))
-	#
-	# def count_ngrams(self, text):
-	# 	for line in text:
-	# 		for i in range(len(line)):
-	# 			phoneme = line[i]
-	# 			ngram = self.preprocess_history(line[:i])
-	# 			if (ngram in self._count_table):
-	# 				if (phoneme in self._count_table[ngram]):
-    #                     self._count_table[ngram][phoneme] += 1
-    #                 else:
-    #                     self._count_table[ngram][phoneme] = 1
-	# 			else:
-    #                 self._count_table[ngram] = {phoneme: 1}
+		self.count_ngrams(min_count, min_length)
+		self.make_prob_table()
 
-	def set_prob_table(self):
+	def preprocess_line(self, line):
+		return (tuple("<BoS>" * self._order) +
+				tuple([c for c in line]) +
+				tuple("<EoS>"))
+
+	def count_ngrams(self, min_count, min_length):
+		for line in self._corpus.get_data_stream(
+								min_count=min_count, min_length=min_length):
+			line = self.preprocess_line(line)
+			for i in range(len(line) - self._order):
+				phoneme = line[i + self._order]
+				ngram = line[i:i + self._order]
+				if (ngram in self._count_table):
+					if (phoneme in self._count_table[ngram]):
+						self._count_table[ngram][phoneme] += 1
+					else:
+						self._count_table[ngram][phoneme] = 1
+				else:
+					self._count_table[ngram] = {phoneme: 1}
+
+	def make_prob_table(self):
 		self._prob_table = self._count_table
 
 		for ngram, countdict in self._count_table.items():
@@ -157,8 +151,10 @@ def main():
 						len(corp.get_vocab(
 							min_count=args.count, min_length=args.length))))
 
-	corp.print_corpus(min_count=args.count, min_length=args.length)
-	corp.print_vocab(min_count=args.count, min_length=args.length)
+	# corp.print_corpus(min_count=args.count, min_length=args.length)
+	# corp.print_vocab(min_count=args.count, min_length=args.length)
+
+	ngram = NGram_LM(corp, min_count=args.count, min_length=args.length)
 
 if __name__ == "__main__":
 	main()
