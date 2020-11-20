@@ -22,6 +22,15 @@ class Corpus:
 		line = line.replace("\n", "")
 		return line
 
+	def transliterate_line(self, line, g2p_dict, epi):
+		line = self.clean_line(line)
+		# transliterate g2p using dict with epitran as fallback
+		line_phonetic = []
+		for word in line.split():
+			word_phonetic = g2p_dict.get(word, epi.transliterate(word))
+			line_phonetic.append(word_phonetic)
+		return line_phonetic
+
 	def set_corpus(self):
 		with open(self._file, 'r') as text, \
 			open(self._dict_file, 'r') as g2p_file:
@@ -30,18 +39,9 @@ class Corpus:
 			epi = Epitran(self._epi_code)
 
 			for line in text:
-				line = self.clean_line(line)
-				# transliterate g2p using dict with epitran as fallback
-				line_phonetic = []
-				for word in line.split():
-					word_phonetic = g2p_dict.get(word, epi.transliterate(word))
-					line_phonetic.append(word_phonetic)
+				line_phonetic = self.transliterate_line(line, g2p_dict, epi)
 				for word in line_phonetic:
 					self._count_table[word] += 1
-
-	def update_count_table(self, line):
-		for word in line.split():
-			self._count_table[word] += 1
 
 	def get_data_stream(self, min_count=1, min_length=1):
 		with open(self._file, 'r') as text, \
@@ -51,21 +51,16 @@ class Corpus:
 			epi = Epitran(self._epi_code)
 
 			for line in text:
-				line = self.clean_line(line)
-				# transliterate g2p using dict with epitran as fallback
-				line_phonetic = []
-				for word in line.split():
-					word_phonetic = g2p_dict.get(word, epi.transliterate(word))
-					line_phonetic.append(word_phonetic)
-				if (self.validate_line(" ".join(line_phonetic), min_count, min_length)):
-					yield (line_phonetic)
+				list_phonetic_words = self.transliterate_line(line, g2p_dict, epi)
+				if (self.validate_line(list_phonetic_words, min_count, min_length)):
+					yield (list_phonetic_words)
 
-	def	validate_line(self, line, min_count=1, min_length=1):
-		if (any([c.isdigit() for c in line])):
+	def	validate_line(self, list_words, min_count=1, min_length=1):
+		if (len(list_words) < min_length):
 			return False
-		if (len(line.split()) < min_length):
+		if (any([self._count_table[word] < min_count for word in list_words])):
 			return False
-		if (any([self._count_table[word] < min_count for word in line.split()])):
+		if (any([c.isdigit() for c in " ".join(list_words)])):
 			return False
 		return True
 
