@@ -1,6 +1,7 @@
 from collections import defaultdict
 import json
 import string
+import numpy as np
 from epitran import Epitran
 
 class Corpus:
@@ -91,9 +92,8 @@ class NGram_LM:
 		self.make_prob_table()
 
 	def preprocess_line(self, line):
-		return (tuple("<BoS>" * self._order) +
-				tuple([c for c in line]) +
-				tuple("<EoS>"))
+
+		return ("<BoS>", ) * self._order + tuple(' '.join(line)) + ("<EoS>",)
 
 	def count_ngrams(self, min_count, min_length):
 		for line in self._corpus.get_data_stream(
@@ -117,6 +117,27 @@ class NGram_LM:
 			ngram_count = sum([count for count in countdict.values()])
 			for word, count in countdict.items():
 				self._prob_table[ngram][word] = count / ngram_count
+
+	def generate_line(self):
+		line = ["<BoS>"] * self._order
+
+		current_token = line[-1]
+
+		while current_token != "<EoS>":
+			current_ngram = line[-self._order:]
+
+			probs_table = self._prob_table[tuple(current_ngram)]
+			probs_array = np.array(list(probs_table.items()))
+
+			tokens = probs_array[:, 0]
+			probs = probs_array[:, 1].astype(np.float32)
+
+			current_token = np.random.choice(tokens, 1, p=probs)[0]
+
+			line.append(current_token)
+
+		return ''.join(line[self._order:-1])
+
 
 def main():
 	# parsing of input flags
@@ -154,7 +175,9 @@ def main():
 	# corp.print_corpus(min_count=args.count, min_length=args.length)
 	# corp.print_vocab(min_count=args.count, min_length=args.length)
 
-	ngram = NGram_LM(corp, min_count=args.count, min_length=args.length)
+	ngram = NGram_LM(corp, min_count=args.count, min_length=args.length, order=5)
+	for i in range(30):
+		print(ngram.generate_line())
 
 if __name__ == "__main__":
 	main()
