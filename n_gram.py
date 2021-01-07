@@ -82,7 +82,7 @@ class Corpus:
 
 class NGram_LM:
 
-	def __init__(self, corpus, min_count=1, min_length=1, order=1):
+	def __init__(self, corpus, min_count=1, min_length=1, order=3):
 		self._corpus = corpus
 		self._order = order
 		self._count_table = dict()
@@ -175,9 +175,12 @@ def main():
 	# corp.print_corpus(min_count=args.count, min_length=args.length)
 	# corp.print_vocab(min_count=args.count, min_length=args.length)
 
-	ngram = NGram_LM(corp, min_count=args.count, min_length=args.length, order=5)
+	ngram = NGram_LM(corp, min_count=args.count, min_length=args.length, order=3)
 	for i in range(30):
-		print(ngram.generate_line())
+		generated_line = ngram.generate_line()
+		while (len(generated_line.split()) < 5):
+			generated_line = ngram.generate_line()
+		print(generated_line)
 
 if __name__ == "__main__":
 	main()
