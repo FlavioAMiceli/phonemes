@@ -1,3 +1,4 @@
 *.txt
 g2p_dictionary/*json
 .vscode/
+venv/
