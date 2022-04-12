@@ -6,16 +6,13 @@ def main():
 	wiki.set_lang("nl")
 	nlp = spacy.load('nl_core_news_sm')
 
-	r_pages = [wiki.random(1) for i in range(10)]
+	r_pages = [wiki.random(1) for i in range(1)]
 	for p in r_pages:
-		try:
-			summary = wiki.page(p).summary
-		except:
-			p = wiki.suggest(p)
-			summary = wiki.page().summary
-
+		summary = wiki.summary(p, sentences=1)
 		doc = nlp(summary)
-		print (f"{p}\n\n{summary}\n")
+
+		print (f"{p}\n\n{summary}\n\n")
+
 		for token in doc:
 			if token.text == '.':
 				print (f"{token.text} <{token.pos_}>")

@@ -6,28 +6,36 @@ def main():
 	doc1 = nlp("Siccia orbiculata is een vlinder uit de familie spinneruilen (Erebidae), onderfamilie beervlinders (Arctiinae). De wetenschappelijke naam van de soort is voor het eerst geldig gepubliceerd in 2007 door Kühne. Deze nachtvlinder komt voor in tropisch Afrika.")
 	doc2 = nlp("Acolastus minimus is een keversoort uit de familie bladkevers (Chrysomelidae). De wetenschappelijke naam van de soort werd in 1917 gepubliceerd door Jacobson.")
 	doc3 = nlp("Salasaca spinea is een vlinder uit de familie van de spanners (Geometridae). De wetenschappelijke naam van de soort is voor het eerst geldig gepubliceerd in 1983 door Rindge.")
+	doc4 = nlp("Tipula (Trichotipula) kennedyana is een tweevleugelige uit de familie langpootmuggen (Tipulidae).")
 
+	# for token in doc1:
+	# 	if token.text == '.':
+	# 		print (f"{token.pos_}")
+	# 		break
+	# 	else:
+	# 		print (f"{token.pos_}", end=' ')
+	#
+	# for token in doc2:
+	# 	if token.text == '.':
+	# 		print (f"{token.pos_}")
+	# 		break
+	# 	else:
+	# 		print (f"{token.pos_}", end=' ')
+	#
+	# for token in doc3:
+	# 	if token.text == '.':
+	# 		print (f"{token.pos_}")
+	# 		break
+	# 	else:
+	# 		print (f"{token.pos_}", end=' ')
 
-	for token in doc1:
+	for token in doc4:
 		if token.text == '.':
 			print (f"{token.pos_}")
 			break
 		else:
 			print (f"{token.pos_}", end=' ')
 
-	for token in doc2:
-		if token.text == '.':
-			print (f"{token.pos_}")
-			break
-		else:
-			print (f"{token.pos_}", end=' ')
-
-	for token in doc3:
-		if token.text == '.':
-			print (f"{token.pos_}")
-			break
-		else:
-			print (f"{token.pos_}", end=' ')
 
 	# for token in doc:
 	# 	# print(token.text, token.lemma_, token.pos_, token.tag_, token.dep_,
@@ -49,8 +57,13 @@ if __name__ == "__main__":
 # Salasaca <PROPN> spinea <SYM> is <AUX> een <DET> vlinder <NOUN> uit <ADP> de <DET> familie <NOUN> van <ADP> de <DET> spanners <NOUN> ( <PUNCT> Geometridae <NOUN> ) <PUNCT> . <PUNCT>
 # PROPN SYM AUX DET NOUN ADP DET NOUN ADP DET NOUN PUNCT NOUN PUNCT PUNCT
 
-# 'Naam' 'naam'	'is' 	'een' 	'SOORT' 'uit de familie'				'FAMILIE (Naam)' 			'ONDERFAMILIE (Naam)'
-# PROPN 	VERB 	AUX 	DET 	NOUN 	ADP DET NOUN 					VERB PUNCT PROPN PUNCT PUNCT NOUN ADJ PUNCT PROPN PUNCT PUNCT
-# PROPN 	PROPN 	AUX 	DET 	NOUN 	ADP DET NOUN 					VERB PUNCT PROPN PUNCT PUNCT
-# 															'van de'
-# PROPN 	SYM 	AUX 	DET 	NOUN 	ADP DET NOUN 		ADP DET 	NOUN PUNCT NOUN PUNCT PUNCT
+# Tipula <PROPN> ( <PUNCT> Trichotipula <PROPN> ) <PUNCT> kennedyana <PROPN> is <AUX> een <DET> tweevleugelige <ADJ> uit <ADP> de <DET> familie <NOUN> langpootmuggen <VERB> ( <PUNCT> Tipulidae <PROPN> ) <PUNCT> . <PUNCT>
+# PROPN PUNCT PROPN PUNCT PROPN AUX DET ADJ ADP DET NOUN VERB PUNCT PROPN PUNCT PUNCT
+
+# 'Naam' 						'naam'					'is' 	'een' 	'SOORT' 'uit de familie'				'FAMILIE (Naam)' 			'ONDERFAMILIE (Naam)'
+# PROPN 						VERB 					AUX 	DET 	NOUN 	ADP DET NOUN 					VERB PUNCT PROPN PUNCT PUNCT NOUN ADJ PUNCT PROPN PUNCT PUNCT
+# PROPN 						PROPN 					AUX 	DET 	NOUN 	ADP DET NOUN 					VERB PUNCT PROPN PUNCT PUNCT
+# 			'(Naam)'
+# PROPN 	PUNCT PROPN PUNCT 	PROPN 					AUX 	DET 	ADJ 	ADP DET NOUN 					VERB PUNCT PROPN PUNCT PUNCT
+# 																				'van de'
+# PROPN 						SYM 					AUX 	DET 	NOUN 	ADP DET NOUN 		ADP DET 	NOUN PUNCT NOUN PUNCT PUNCT
