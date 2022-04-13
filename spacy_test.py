@@ -8,6 +8,23 @@ def main():
 	doc3 = nlp("Salasaca spinea is een vlinder uit de familie van de spanners (Geometridae). De wetenschappelijke naam van de soort is voor het eerst geldig gepubliceerd in 1983 door Rindge.")
 	doc4 = nlp("Tipula (Trichotipula) kennedyana is een tweevleugelige uit de familie langpootmuggen (Tipulidae).")
 
+	# Phalacrophyto is een geslacht van vliegen (Brachycera) uit de familie van de sluipvliegen (Tachinidae).
+	# Dipsalidictis is een uitgestorven roofzoogdier behorend tot de familie Oxyaenidae van de Creodonta dat in het Laat-Paleoceen en Vroeg-Eoceen in Noord-Amerika leefde.
+	# Epamera is een geslacht van vlinders van de familie Lycaenidae.
+	# Het markiezinnetje (Dascyllus aruanus) is een straalvinnige vissensoort uit de familie van de rifbaarzen en koraaljuffertjes (Pomacentridae).
+	# Arenorbis is een geslacht van uitgestorven slangsterren uit de familie Ophiolepididae.
+	# Plagiostomum quadrioculatum is een platworm (Platyhelminthes).
+	# Pseudogobio is een geslacht van straalvinnige vissen uit de familie van eigenlijke karpers (Cyprinidae).
+	# Aspilota flagimilis is een insect dat behoort tot de orde vliesvleugeligen (Hymenoptera) en de familie van de schildwespen (Braconidae).
+	# Hyalonema (Coscinonema) conus is een sponssoort in de taxonomische indeling van de glassponzen (Hexactinellida).
+	# Lasioglossum albipenne is een vliesvleugelig insect uit de familie Halictidae.
+	# Mijten (Acariformes) zijn kleine geleedpotigen met een lichaam dat niet duidelijk in twee (zoals bij spinnen) of drie (zoals bij insecten) geledingen is gedeeld.
+	# Perilitus trigonalis is een insect dat behoort tot de orde vliesvleugeligen (Hymenoptera) en de familie van de schildwespen (Braconidae).
+
+	# LIJST
+	# De lijst van vlinders in IJsland bevat alle vlindersoorten die voorkomen in IJsland.
+	#
+
 	# for token in doc1:
 	# 	if token.text == '.':
 	# 		print (f"{token.pos_}")
